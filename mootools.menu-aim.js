@@ -1,7 +1,7 @@
 /**
  * Created by actuosus on 8/19/13.
  * @author Arthur Chafonov <actuosus@gmail.com>
- * Port from https://github.com/kamens/jQuery-menu-aim for MooTools.
+ * Port from https://github.com/kamens/jQuery-menu-aim
  */
 
 ;(function () {
@@ -16,6 +16,8 @@
             submenuSelector: "*",
             submenuDirection: "right",
             tolerance: 75,  // bigger = more forgivey when entering submenu
+            delay: 300,  // ms delay when user appears to be entering submenu
+
             enter: noop,
             exit: noop,
             activate: noop,
@@ -32,7 +34,6 @@
             this.timeoutId = null;
 
             this.MOUSE_LOCS_TRACKED = 3;  // number of past mouse locations to track
-            this.DELAY = 300;  // ms delay when user appears to be entering submenu
 
             this.attach();
         },
@@ -44,37 +45,23 @@
         attach: function () {
             this.bounds = {
                 elementLeave: this.elementLeave.bind(this),
-                documentMouseMove: this.documentMouseMove.bind(this)
+                documentMouseMove: this.documentMouseMove.bind(this),
+                rowEnter: this.rowEnter.bind(this),
+                rowLeave: this.rowLeave.bind(this),
+                rowClick: this.rowClick.bind(this)
             };
+            this.relayedEvents = {};
+            this.relayedEvents['mouseenter:relay('+this.options.rowSelector+')'] = this.bounds.rowEnter;
+            this.relayedEvents['mouseleave:relay('+this.options.rowSelector+')'] = this.bounds.rowLeave;
+            this.relayedEvents['click:relay('+this.options.rowSelector+')'] = this.bounds.rowClick;
             this.element.addEvent('mouseleave', this.bounds.elementLeave);
-            var rows = this.element.getElements(this.options.rowSelector);
-            for (var i = 0; i < rows.length; i++) {
-                var row = rows[i];
-                row.bounds = {
-                    mouseenter: this.rowEnter.bind(this, row),
-                    mouseleave: this.rowLeave.bind(this, row),
-                    click: this.rowClick.bind(this, row)
-                };
-                row.addEvents({
-                    mouseenter: row.bounds.mouseenter,
-                    mouseleave: row.bounds.mouseleave,
-                    click: row.bounds.click
-                });
-            }
+            this.element.addEvents(this.relayedEvents);
             document.addEvent('mousemove', this.bounds.documentMouseMove.bind(this));
         },
 
         detach: function () {
             this.element.removeEvent('mouseleave', this.bounds.elementLeave);
-            var rows = this.element.getElements(this.options.rowSelector);
-            for (var i = 0; i < rows.length; i++) {
-                var row = rows[i];
-                row.removeEvents({
-                    mouseenter: row.bounds.mouseenter,
-                    mouseleave: row.bounds.mouseleave,
-                    click: row.bounds.click
-                });
-            }
+            this.element.removeEvents(this.relayedEvents);
             document.removeEvent('mousemove', this.bounds.documentMouseMove);
         },
 
@@ -111,7 +98,7 @@
         /**
          * Trigger a possible row activation whenever entering a new row.
          */
-        rowEnter: function (row) {
+        rowEnter: function (event, row) {
             if (this.timeoutId) {
                 // Cancel any previous activation delays
                 clearTimeout(this.timeoutId);
@@ -121,14 +108,14 @@
             this.possiblyActivate(row);
         },
 
-        rowLeave: function (row) {
+        rowLeave: function (event, row) {
             this.options.exit(row);
         },
 
         /**
          * Immediately activate a row if the user clicks on it.
          */
-        rowClick: function (row) {
+        rowClick: function (event, row) {
             this.activateRow(row);
         },
 
@@ -147,22 +134,21 @@
                 return 0;
             }
 
-            var elementSize = this.element.getSize();
             var offset = this.element.getCoordinates(),
                 upperLeft = {
                     x: offset.left,
                     y: offset.top - this.options.tolerance
                 },
                 upperRight = {
-                    x: offset.left + elementSize.x,
+                    x: offset.left + offset.width,
                     y: upperLeft.y
                 },
                 lowerLeft = {
                     x: offset.left,
-                    y: offset.top + elementSize.y + this.options.tolerance
+                    y: offset.top + offset.height + this.options.tolerance
                 },
                 lowerRight = {
-                    x: offset.left + elementSize.x,
+                    x: offset.left + offset.width,
                     y: lowerLeft.y
                 },
                 loc = this.mouseLocs[this.mouseLocs.length - 1],
@@ -245,7 +231,7 @@
                 // currently activated submenu. Delay before activating a
                 // new menu row, because user may be moving into submenu.
                 this.lastDelayLoc = loc;
-                return this.DELAY;
+                return this.options.delay;
             }
 
             this.lastDelayLoc = null;

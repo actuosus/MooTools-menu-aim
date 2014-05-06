@@ -2,6 +2,9 @@
  * Created by actuosus on 8/19/13.
  * @author Arthur Chafonov <actuosus@gmail.com>
  * Port from https://github.com/kamens/jQuery-menu-aim
+ * @linkcode https://github.com/actuosus/jQuery-menu-aim
+ * @requires MooTools
+ * @version 0.1.1
  */
 
 ;(function () {
@@ -52,6 +55,7 @@
             };
             this.relayedEvents = {};
             this.relayedEvents['mouseenter:relay('+this.options.rowSelector+')'] = this.bounds.rowEnter;
+            this.relayedEvents['touchstart:relay('+this.options.rowSelector+')'] = this.bounds.rowEnter;
             this.relayedEvents['mouseleave:relay('+this.options.rowSelector+')'] = this.bounds.rowLeave;
             this.relayedEvents['click:relay('+this.options.rowSelector+')'] = this.bounds.rowClick;
             this.element.addEvent('mouseleave', this.bounds.elementLeave);

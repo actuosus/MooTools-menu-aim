@@ -2,10 +2,18 @@
  * Created by actuosus on 8/19/13.
  * @author Arthur Chafonov <actuosus@gmail.com>
  * Port from https://github.com/kamens/jQuery-menu-aim
+ * @linkcode https://github.com/actuosus/jQuery-menu-aim
+ * @requires MooTools
+ * @version 0.1.1
  */
 
+/* globals Class: true, Options: true, Events: true */
+
 ;(function () {
-    function noop() {}
+    'use strict';
+
+    function noop() {
+    }
 
     this.MenuAim = new Class({
 
@@ -53,9 +61,10 @@
                 rowClick: this.rowClick.bind(this)
             };
             this.relayedEvents = {};
-            this.relayedEvents['mouseenter:relay('+this.options.rowSelector+')'] = this.bounds.rowEnter;
-            this.relayedEvents['mouseleave:relay('+this.options.rowSelector+')'] = this.bounds.rowLeave;
-            this.relayedEvents['click:relay('+this.options.rowSelector+')'] = this.bounds.rowClick;
+            this.relayedEvents['mouseenter:relay(' + this.options.rowSelector + ')'] = this.bounds.rowEnter;
+            this.relayedEvents['touchstart:relay(' + this.options.rowSelector + ')'] = this.bounds.rowEnter;
+            this.relayedEvents['mouseleave:relay(' + this.options.rowSelector + ')'] = this.bounds.rowLeave;
+            this.relayedEvents['click:relay(' + this.options.rowSelector + ')'] = this.bounds.rowClick;
             this.element.addEvent('mouseleave', this.bounds.elementLeave);
             this.element.addEvents(this.relayedEvents);
             document.addEvent('mousemove', this.bounds.documentMouseMove.bind(this));
@@ -122,7 +131,7 @@
             this.activateRow(row);
         },
 
-        _addDebugLayer: function() {
+        _addDebugLayer: function () {
             this.debug = {
                 canvas: document.createElement('canvas')
             };
@@ -135,18 +144,18 @@
             this.debug.canvas.addEvent('mousemove', this._debugLayerMouseMove.bind(this));
         },
 
-        _debugLayerMouseMove: function(e) {
+        _debugLayerMouseMove: function (e) {
             var treeWalker = document.createTreeWalker(
-                  this.element,
-                  NodeFilter.SHOW_ELEMENT,
-                  { acceptNode: function(node) { return NodeFilter.FILTER_ACCEPT; } },
-                  false
-                );
-
-            var nodeList = [];
+                this.element,
+                NodeFilter.SHOW_ELEMENT,
+                { acceptNode: function (node) {
+                    return NodeFilter.FILTER_ACCEPT;
+                } },
+                false
+            );
 
             var coordinates, found;
-            while(treeWalker.nextNode()) {
+            while (treeWalker.nextNode()) {
                 coordinates = treeWalker.currentNode.getCoordinates();
                 if (coordinates.left <= e.page.x && coordinates.left + coordinates.width >= e.page.x) {
                     if (coordinates.top <= e.page.y && coordinates.top + coordinates.height >= e.page.y) {
@@ -159,45 +168,59 @@
             }
         },
 
-        _debugLayerMouseLeave: function(e) {
+        _debugLayerMouseLeave: function () {
             this._hideDebugLayer();
         },
 
-        _drawDebugLayer: function(loc, offset, upperRight, lowerRight, upperLeft, lowerLeft, delay) {
+        _drawDebugLayer: function (loc, offset, upperRight, lowerRight, upperLeft, lowerLeft, delay) {
+            var debug = this.debug;
+            var canvas = debug.canvas;
+            var ctx = canvas.ctx;
             var blockWidth = offset.width;
             var blockHeight = lowerRight.y - upperRight.y;
-            this.debug.canvas.style.left = upperLeft.x+'px';
-            this.debug.canvas.style.top = offset.top - this.options.tolerance + 'px';
-            this.debug.canvas.style.zIndex = 10000;
-            this.debug.canvas.width = blockWidth;
-            this.debug.canvas.height = blockHeight;
+            canvas.style.left = upperLeft.x + 'px';
+            canvas.style.top = offset.top - this.options.tolerance + 'px';
+            canvas.style.zIndex = 10000;
+            canvas.width = blockWidth;
+            canvas.height = blockHeight;
 
-            this.debug.ctx.clearRect(0, 0, blockWidth, blockHeight);
+            ctx.clearRect(0, 0, blockWidth, blockHeight);
             // Triangle
-            var triangeOpacity = 0.3 + delay/1000;
-            this.debug.ctx.beginPath();
-            this.debug.ctx.moveTo(loc.x - upperLeft.x, loc.y - upperLeft.y);
-            this.debug.ctx.lineTo(upperRight.x - upperLeft.x, upperRight.y - upperLeft.y);
-            this.debug.ctx.lineTo(lowerRight.x - upperLeft.x, lowerRight.y - upperLeft.y);
-            this.debug.ctx.closePath();
-            this.debug.ctx.fillStyle = 'rgba(0, 0, 200, '+triangeOpacity+")";
-            this.debug.ctx.fill();
+            var triangleOpacity = 0.3 + delay / 1000;
+            ctx.beginPath();
+            ctx.moveTo(loc.x - upperLeft.x, loc.y - upperLeft.y);
+            if (this.options.submenuDirection === 'left') {
+                ctx.lineTo(upperRight.x - upperLeft.x, upperRight.y - upperLeft.y);
+                ctx.lineTo(lowerRight.x - upperLeft.x, lowerRight.y - upperLeft.y);
+            } else if (this.options.submenuDirection === 'below') {
+                ctx.lineTo(0, lowerRight.y - upperRight.y);
+                ctx.lineTo(upperRight.x - upperLeft.x, lowerRight.y - upperRight.y);
+            } else if (this.options.submenuDirection === 'above') {
+                ctx.lineTo(0, 0);
+                ctx.lineTo(upperRight.x - upperLeft.x, 0);
+            } else {
+                ctx.lineTo(upperRight.x - upperLeft.x, upperRight.y - upperLeft.y);
+                ctx.lineTo(lowerRight.x - upperLeft.x, lowerRight.y - upperLeft.y);
+            }
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(0, 0, 200, ' + triangleOpacity + ')';
+            ctx.fill();
 
             var radius = 5;
-            this.debug.ctx.beginPath();
-            this.debug.ctx.arc(loc.x - upperLeft.x, loc.y - upperLeft.y, radius, 0, 2 * Math.PI, false);
-            this.debug.ctx.fillStyle = 'rgba(20, 255, 20, 0.5)';
-            this.debug.ctx.fill();
-            this.debug.ctx.lineWidth = 1;
-            this.debug.ctx.strokeStyle = '#003300';
-            this.debug.ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(loc.x - upperLeft.x, loc.y - upperLeft.y, radius, 0, 2 * Math.PI, false);
+            ctx.fillStyle = 'rgba(20, 255, 20, 0.5)';
+            ctx.fill();
+            ctx.lineWidth = 1;
+            ctx.strokeStyle = '#003300';
+            ctx.stroke();
         },
 
-        _showDebugLayer: function() {
+        _showDebugLayer: function () {
             this.debug.canvas.style.display = 'block';
         },
 
-        _hideDebugLayer: function() {
+        _hideDebugLayer: function () {
             this.debug.canvas.style.display = 'none';
         },
 
@@ -255,7 +278,7 @@
             }
 
             if (this.lastDelayLoc &&
-                loc.x == this.lastDelayLoc.x && loc.y == this.lastDelayLoc.y) {
+                loc.x === this.lastDelayLoc.x && loc.y === this.lastDelayLoc.y) {
                 // If the mouse hasn't moved since the last time we checked
                 // for activation status, immediately activate.
                 return 0;
@@ -294,13 +317,13 @@
             // corner to decrease over time, as explained above. If the
             // submenu opens in a different direction, we change our slope
             // expectations.
-            if (this.options.submenuDirection == "left") {
+            if (this.options.submenuDirection === "left") {
                 decreasingCorner = lowerLeft;
                 increasingCorner = upperLeft;
-            } else if (this.options.submenuDirection == "below") {
+            } else if (this.options.submenuDirection === "below") {
                 decreasingCorner = lowerRight;
                 increasingCorner = lowerLeft;
-            } else if (this.options.submenuDirection == "above") {
+            } else if (this.options.submenuDirection === "above") {
                 decreasingCorner = upperLeft;
                 increasingCorner = upperRight;
             }
@@ -346,7 +369,7 @@
          * Activate a menu row.
          */
         activateRow: function (row) {
-            if (row == this.activeRow) {
+            if (row === this.activeRow) {
                 return;
             }
             if (this.activeRow) {

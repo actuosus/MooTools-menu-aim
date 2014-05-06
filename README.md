@@ -1,11 +1,11 @@
-jQuery-menu-aim
+MooTools-menu-aim
 ===============
 
-menu-aim is a jQuery plugin for dropdown menus that can differentiate
+menu-aim is a MooTools plugin for dropdown menus that can differentiate
 between a user trying hover over a dropdown item vs trying to navigate into
 a submenu's contents.
 
-[Try a demo.](https://rawgithub.com/kamens/jQuery-menu-aim/master/example/example.html)
+[Try a demo.](https://rawgithub.com/actuosus/jQuery-menu-aim/master/example/example.mootools.html)
 
 ![Amazon screenshot](https://raw.github.com/kamens/jQuery-menu-aim/master/amazon.png)
 
